@@ -1,1 +1,0 @@
-{"rewrites":[{"source":"/","has":[{"type":"host","value":"dr-gundala-nagaraju.vercel.app"}],"destination":"/dr-raju/index.html"},{"source":"/","has":[{"type":"host","value":"tambo-hyd.vercel.app"}],"destination":"/tambo/index.html"}]}
