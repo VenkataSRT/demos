@@ -1,0 +1,294 @@
+/* ==========================================================================
+   Motion
+   --------------------------------------------------------------------------
+   Weighting: Jakub (polish, bounce:0) primary · Jhey (one expressive moment)
+   secondary · Emil (frequency gate) selective.
+
+   Timing scale — one system, not a duration per element:
+     --dur-micro   160ms  hover / press feedback
+     --dur-small   240ms  state changes, nav indicator
+     --dur-reveal  520ms  scroll-in (Jakub enter recipe: opacity + rise + blur)
+
+   Easing — no bare `ease`. --ease-polish decelerates hard and settles with
+   zero overshoot, which is the CSS equivalent of a spring with bounce: 0.
+
+   Rules held throughout:
+     · only transform / opacity / filter are animated (no reflow)
+     · no looping attention-seeking motion (no pulses, no breathing CTAs)
+     · the globe draws in once on load; it never rotates on a loop
+     · gallery and booking stay instant — both are high-frequency and
+       keyboard-driven, so per Emil they get no animation at all
+   ========================================================================== */
+
+:root {
+  --dur-micro: 160ms;
+  --dur-small: 240ms;
+  --dur-reveal: 520ms;
+  --dur-hero: 720ms;
+
+  /* smooth deceleration, no overshoot (bounce: 0) */
+  --ease-polish: cubic-bezier(0.22, 1, 0.36, 1);
+  /* gentler curve for symmetric two-way state changes */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---------- Hover / press feedback ---------------------------------------- */
+
+@media (hover: hover) {
+  .btn,
+  .lang-btn,
+  .gallery-thumb,
+  .gallery-arrow,
+  .calendar-day,
+  .calendar-nav,
+  .time-slot,
+  .section-nav-link,
+  .text-link,
+  .marquee-toggle {
+    transition-timing-function: var(--ease-standard);
+  }
+}
+
+/* Immediate tactile acknowledgement. Applies to pointer press only, so it
+   never fires for keyboard-initiated actions. */
+.btn:active,
+.gallery-arrow:active,
+.calendar-day:active:not(:disabled),
+.time-slot:active,
+.lang-btn:active {
+  transform: scale(0.975);
+  transition-duration: 90ms;
+}
+
+/* ---------- Scroll reveal -------------------------------------------------- */
+/* Scoped to .js so that with scripting off nothing is ever hidden. */
+
+.js [data-reveal]:not([data-revealed="true"]) > * {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+/* Blur only on text and card content. Media keeps to opacity + transform —
+   animating filter on a full-bleed photo is the single easiest way to make a
+   mid-range phone drop frames. */
+.js [data-reveal]:not([data-revealed="true"]) > *:not(figure):not(img) {
+  filter: blur(5px);
+}
+
+.js [data-reveal] > * {
+  transition:
+    opacity var(--dur-reveal) var(--ease-polish),
+    transform var(--dur-reveal) var(--ease-polish),
+    filter var(--dur-reveal) var(--ease-polish);
+  transition-delay: calc(var(--reveal-i, 0) * 70ms);
+}
+
+.js [data-revealed="true"] > * {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+}
+
+/* Stagger, capped at six steps so long card rows don't crawl. */
+[data-reveal] > *:nth-child(1) { --reveal-i: 0; }
+[data-reveal] > *:nth-child(2) { --reveal-i: 1; }
+[data-reveal] > *:nth-child(3) { --reveal-i: 2; }
+[data-reveal] > *:nth-child(4) { --reveal-i: 3; }
+[data-reveal] > *:nth-child(5) { --reveal-i: 4; }
+[data-reveal] > *:nth-child(6) { --reveal-i: 5; }
+[data-reveal] > *:nth-child(n + 7) { --reveal-i: 5; }
+
+/* ---------- Hero entrance (once per load) ---------------------------------- */
+/* Keyframes are fine here: this is a one-shot on load, never re-triggered,
+   so there is nothing to interrupt. fill-mode both prevents a flash of the
+   un-animated state before the delay kicks in. */
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes draw-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.js .hero-eyebrow,
+.js .hero-name,
+.js .hero-role,
+.js .hero-lede,
+.js .hero-position,
+.js .hero-actions {
+  animation: rise-in var(--dur-hero) var(--ease-polish) both;
+}
+
+.js .hero-eyebrow   { animation-delay: 40ms; }
+.js .hero-name      { animation-delay: 110ms; }
+.js .hero-role      { animation-delay: 180ms; }
+.js .hero-lede      { animation-delay: 250ms; }
+.js .hero-position  { animation-delay: 320ms; }
+.js .hero-actions   { animation-delay: 390ms; }
+
+/* Portrait resolves slightly behind the copy — a scale settle rather than a
+   slide, so it reads as the image coming into focus. */
+.js .hero-figure {
+  animation: draw-in 900ms var(--ease-polish) both;
+  animation-delay: 180ms;
+}
+
+/* Globe draws itself in once, then stays completely still. A permanently
+   rotating globe would be the looping attention-seeking motion the brief and
+   the accessibility guidance both rule out. */
+.js .hero-globe svg {
+  animation: draw-in 1100ms var(--ease-polish) both;
+  animation-delay: 320ms;
+}
+
+.js .globe-nodes circle {
+  animation: draw-in 420ms var(--ease-polish) both;
+  animation-delay: calc(700ms + var(--node-i, 0) * 14ms);
+}
+
+.globe-nodes circle:nth-child(1) { --node-i: 0; }
+.globe-nodes circle:nth-child(2) { --node-i: 1; }
+.globe-nodes circle:nth-child(3) { --node-i: 2; }
+.globe-nodes circle:nth-child(4) { --node-i: 3; }
+.globe-nodes circle:nth-child(5) { --node-i: 4; }
+.globe-nodes circle:nth-child(6) { --node-i: 5; }
+.globe-nodes circle:nth-child(7) { --node-i: 6; }
+.globe-nodes circle:nth-child(8) { --node-i: 7; }
+.globe-nodes circle:nth-child(9) { --node-i: 8; }
+.globe-nodes circle:nth-child(n + 10) { --node-i: 9; }
+
+/* ---------- Nav indicator -------------------------------------------------- */
+/* One pill that slides between items rather than each link fading its own
+   background — reads as a single moving object, and cannot lag behind the
+   scroll-spy. */
+
+.section-nav-list {
+  position: relative;
+}
+
+.nav-indicator {
+  position: absolute;
+  top: var(--sp-2);
+  left: 0;
+  height: calc(var(--tap) - 0px);
+  border-radius: var(--radius-sm);
+  background: var(--ds-teal-soft);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform var(--dur-small) var(--ease-polish),
+    width var(--dur-small) var(--ease-polish),
+    opacity var(--dur-small) var(--ease-standard);
+  will-change: transform, width;
+}
+
+.nav-indicator[data-visible="true"] {
+  opacity: 1;
+}
+
+/* ---------- Functional: validation alert ------------------------------------ */
+/* Functional, not decorative — removing it leaves the user with no signal that
+   their submit did nothing. Fast and small: it reports, it doesn't perform. */
+
+@keyframes alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.js .alert {
+  animation: alert-in 220ms var(--ease-polish) both;
+}
+
+/* ---------- Card hover ------------------------------------------------------ */
+/* Multi-layer shadows read as depth on the cream background; the existing
+   hairline border stays for definition. */
+
+.card {
+  transition:
+    transform var(--dur-micro) var(--ease-standard),
+    box-shadow var(--dur-micro) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 1px rgb(31 27 25 / 6%),
+      0 1px 2px -1px rgb(31 27 25 / 6%),
+      0 8px 20px -6px rgb(31 27 25 / 10%);
+  }
+}
+
+/* ---------- Gallery: deliberately still ------------------------------------- */
+/* Prev/next and arrow keys drive this. High-frequency and keyboard-initiated,
+   so per the frequency gate it changes instantly — no fade, no slide. The one
+   concession is a hairline border flash on the selected thumbnail, which is
+   state feedback rather than motion. */
+
+.gallery-slide {
+  transition: none;
+}
+
+/* ---------- Reduced motion -------------------------------------------------- */
+/* The global reduced-motion block in base.css collapses durations. These rules
+   make sure a collapsed reveal still lands on the final state rather than
+   stranding content at opacity 0. */
+
+@media (prefers-reduced-motion: reduce) {
+  .js [data-reveal]:not([data-revealed="true"]) > * {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .js [data-reveal] > * {
+    transition: none;
+  }
+
+  .js .hero-eyebrow,
+  .js .hero-name,
+  .js .hero-role,
+  .js .hero-lede,
+  .js .hero-position,
+  .js .hero-actions,
+  .js .hero-figure,
+  .js .hero-globe svg,
+  .js .globe-nodes circle,
+  .js .alert {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .nav-indicator {
+    transition: none;
+  }
+
+  .marquee-track {
+    animation: none;
+  }
+}
